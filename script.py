@@ -56,4 +56,5 @@ def f(g, h):
 
 if __name__ == "__main__":
     l = a.argv[1] if len(a.argv) > 1 else None
-    m = a.argv[2] if
+    m = a.argv[2] if len(a.argv) > 2 else None
+    f(l, m)
